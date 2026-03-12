@@ -1,0 +1,6 @@
+__pycache__
+.conda
+.vscode
+credentials.json
+token.json
+.DS_Store
