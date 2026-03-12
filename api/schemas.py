@@ -5,3 +5,6 @@ class EventModel(BaseModel):
     description: str
     start_time: str
     end_time: str
+
+class DeleteModel(BaseModel):
+    id: str

@@ -11,6 +11,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from schemas import EventModel
+from schemas import DeleteModel
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -101,3 +102,12 @@ def get_event(name: str):
         return {"status": "Success", "matches": results}
     except Exception as e:
         {"status": "Error", "message": str(e)}
+
+@app.delete("/event")
+def delete_event(event: DeleteModel):
+    service = calendar()
+    try:
+        service.events().delete(calendarId="primary", eventId=event.id).execute()
+        return {"status": "Success", "message": "Event deleted"}
+    except Exception as e:
+        return {"status": "Error", "message": str(e)}
