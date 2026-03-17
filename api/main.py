@@ -7,29 +7,17 @@ from fastapi.responses import RedirectResponse
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
+
 from googleapiclient.errors import HttpError
 
-from schemas import EventModel
-from schemas import DeleteModel
+from routers.calendar import router as calendar_router
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 app = FastAPI()
-
-def calendar():
-    if not os.path.exists("token.json"):
-        raise HTTPException(status_code=401, detail="Not authenticated. Please visit /login")
-    
-    creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-
-    if creds.expired and creds.refresh_token:
-        creds.refresh(GoogleRequest())
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
-    return build("calendar", "v3", credentials=creds)
+app.include_router(calendar_router, prefix="/calendar", tags=["Calendar"])
 
 
 @app.get("/login")
@@ -38,6 +26,9 @@ def login():
 
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+
+    if creds and creds.valid:
+        return {"status": "Already logged in", "message": "You have valid credentials."}
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -63,51 +54,5 @@ def auth(request: Request):
     except Exception as e:
         return {"status": "Error", "message": str(e)}
 
-@app.post("/event") 
-def add_event(event: EventModel):
-    service = calendar()
-    event_body = {
-        'summary': event.summary,
-        'description': event.description,
-        'start': {
-            'dateTime': event.start_time,
-            'timeZone': 'UTC',
-        },
-        'end': {
-            'dateTime': event.end_time,
-            'timeZone': 'UTC',
-        },
-    }
-    try:
-        event = service.events().insert(calendarId="primary", body=event_body).execute()
-        return {"status": "Success", "message": "Event created"}
-    except HttpError as e:
-        return {"status": "Error", "message": str(e)}
 
-@app.get("/event")
-def get_event(name: str):
-    service = calendar()
-    try:
-        events_response = service.events().list(calendarId="primary", q=name, singleEvents=True).execute()
-        events = events_response.get("items", [])
-        if not events:
-            return {"status": "Error", "message": "Event not found!"}
-        
-        results = []
-        for event in events:
-            results.append({
-                "title": event["summary"],
-                "id": event["id"]
-            })        
-        return {"status": "Success", "matches": results}
-    except Exception as e:
-        {"status": "Error", "message": str(e)}
 
-@app.delete("/event")
-def delete_event(event: DeleteModel):
-    service = calendar()
-    try:
-        service.events().delete(calendarId="primary", eventId=event.id).execute()
-        return {"status": "Success", "message": "Event deleted"}
-    except Exception as e:
-        return {"status": "Error", "message": str(e)}
