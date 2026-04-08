@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.errors import HttpError
 
 from routers.calendar import router as calendar_router
+from routers.gemini import router as gemini_router
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -18,6 +19,7 @@ SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 app = FastAPI()
 app.include_router(calendar_router, prefix="/calendar", tags=["Calendar"])
+app.include_router(gemini_router, prefix="/gemini", tags=["Gemini"])
 
 
 @app.get("/login")

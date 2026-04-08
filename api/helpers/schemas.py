@@ -8,3 +8,6 @@ class EventModel(BaseModel):
 
 class DeleteModel(BaseModel):
     id: str
+
+class PromptRequest(BaseModel):
+    prompt: str
